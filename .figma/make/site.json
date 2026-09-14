@@ -1,0 +1,10 @@
+{
+  "description": "Empower developers, students, and professionals with a sleek AI workspace that enhances productivity through advanced chat, coding, and artifact management features.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
