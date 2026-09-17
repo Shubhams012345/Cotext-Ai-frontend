@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState } from "react"
+
+import api from "../lib/api"
+
 import {
   Sparkles,
   ArrowLeft,
@@ -10,178 +13,248 @@ import {
   LoaderCircle,
   X,
   RefreshCw,
-} from "lucide-react";
+} from "lucide-react"
 
 const plans = [
-  { name: "Free", price: "₹0", credits: 100, days: 30 },
-  { name: "Starter", price: "₹199", credits: 500, days: 30 },
-  { name: "Pro", price: "₹499", credits: 1000, days: 30 },
-];
+  { id: "free", name: "Free", price: "₹0", amount: 0, credits: 100, days: 30 },
+
+  {
+    id: "starter",
+    name: "Starter",
+    price: "₹199",
+    amount: 199,
+    credits: 500,
+    days: 30,
+  },
+
+  {
+    id: "pro",
+    name: "Pro",
+    price: "₹499",
+    amount: 499,
+    credits: 1000,
+    days: 30,
+  },
+]
 
 const costs = [
   ["Chat", "1 Credit"],
+
   ["Search", "5 Credits"],
+
   ["Coding", "10 Credits"],
+
   ["Vision", "10 Credits"],
+
   ["PDF", "10 Credits"],
+
   ["PPT", "10 Credits"],
-];
+]
 
 const usage = [
-  ["Today's Credits Used", "12", "-8%", Zap, "#F59E0B"],
-  ["Weekly Usage", "86", "+14%", TrendingUp, "#6C5CE7"],
-  ["Monthly Usage", "150", "+22%", Calendar, "#EC4899"],
-  ["Remaining Credits", "350", "70% left", CreditCard, "#22C55E"],
-];
+  ["Today's Credits Used", null, "", Zap, "#F59E0B"],
+
+  ["Weekly Usage", null, "", TrendingUp, "#6C5CE7"],
+
+  ["Monthly Usage", null, "", Calendar, "#EC4899"],
+
+  ["Remaining Credits", null, "", CreditCard, "#22C55E"],
+]
 
 async function createPayment(order) {
-  const response = await fetch("/api/billing/create-order", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(order),
-  });
-  if (!response.ok) throw new Error("Unable to create payment order");
-  return response.json();
+  const { data } = await api.post("/billing/create-order", order)
+
+  return data
 }
 
 async function verifyPayment(payload) {
-  const response = await fetch("/api/billing/verify-payment", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) throw new Error("Payment verification failed");
-  return response.json();
+  const { data } = await api.post("/billing/verify-payment", payload)
+
+  return data
 }
 
 function loadRazorpay() {
-  if (window.Razorpay) return Promise.resolve();
+  if (window.Razorpay) return Promise.resolve()
+
   return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = resolve;
-    script.onerror = () => reject(new Error("Razorpay is unavailable"));
-    document.body.appendChild(script);
-  });
+    const script = document.createElement("script")
+
+    script.src = "https://checkout.razorpay.com/v1/checkout.js"
+
+    script.onload = resolve
+
+    script.onerror = () => reject(new Error("Razorpay is unavailable"))
+
+    document.body.appendChild(script)
+  })
 }
 
 export default function BillingScreen({ navigate, account, setAccount }) {
-  const [loading, setLoading] = useState(null);
-  const [modal, setModal] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(null)
+
+  const [modal, setModal] = useState(null)
+
+  const [refreshing, setRefreshing] = useState(false)
+
+  const currentPlan =
+    plans.find(
+      (plan) => plan.id === String(account.plan || "").toLowerCase(),
+    ) ||
+    plans.find(
+      (plan) =>
+        plan.name.toLowerCase() === String(account.plan || "").toLowerCase(),
+    )
+
+  const remainingCredits = Number(account.credits || 0)
+
+  const totalCredits = Number(account.totalCredits || currentPlan?.credits || 0)
+
+  const expiryDate = account.planExpiresAt
+    ? new Date(account.planExpiresAt).toLocaleDateString()
+    : account.expiry || "Not set"
+
+  const creditPercent = totalCredits
+    ? Math.min(100, (remainingCredits / totalCredits) * 100)
+    : 0
 
   const refreshAccount = async () => {
-    setRefreshing(true);
+    setRefreshing(true)
+
     try {
-      const response = await fetch("/api/billing/me", {
-        credentials: "include",
-      });
-      if (response.ok) {
-        const refreshedAccount = await response.json();
-        setAccount((current) => ({ ...current, ...refreshedAccount }));
-      }
+      const { data } = await api.get("/me")
+
+      setAccount((current) => ({ ...current, ...data }))
+    } catch (error) {
+      setModal({
+        type: "failure",
+
+        title: "Unable to Refresh Billing",
+
+        message: error.response?.data?.message || "Please try again.",
+      })
     } finally {
-      setRefreshing(false);
+      setRefreshing(false)
     }
-  };
+  }
 
   const completePayment = async (payment, plan, kind) => {
-    const refreshed = await verifyPayment(payment);
-    setAccount((current) => ({
-      ...current,
-      ...(refreshed.account || {}),
-      plan: refreshed.plan || (kind === "credits" ? current.plan : plan.name),
-      credits:
-        refreshed.credits ??
-        (kind === "credits" ? current.credits + plan.credits : plan.credits),
-      totalCredits:
-        refreshed.totalCredits ??
-        (kind === "credits" ? current.totalCredits : plan.credits),
-    }));
+    const refreshed = await verifyPayment(payment)
+
+    await refreshAccount()
+
     setModal({
       type: "success",
+
       title: "Payment Successful",
+
       message: `${plan.name} is now active. Your credits have been refreshed.`,
-    });
-  };
+    })
+  }
 
   const pay = async (plan, kind = "plan") => {
-    setLoading(`${kind}-${plan.name}`);
+    setLoading(`${kind}-${plan.name}`)
+
     try {
       const order = await createPayment({
-        plan: plan.name,
-        amount: plan.price,
+        plan: plan.id || "starter",
+
         purchaseType: kind,
-      });
-      await loadRazorpay();
+      })
+
+      await loadRazorpay()
+
       const checkout = new window.Razorpay({
-        key: order.keyId || order.key,
-        amount: order.amount,
-        currency: order.currency || "INR",
+        key: order.keyId,
+
+        amount: order.order.amount,
+
+        currency: order.order.currency || "INR",
+
         name: "CotextAI",
-        description: `${plan.name} ${kind === "credits" ? "credit top-up" : "plan"}`,
-        order_id: order.orderId || order.id,
+
+        description: `${plan.name} ${
+          kind === "credits" ? "credit top-up" : "plan"
+        }`,
+
+        order_id: order.order.id,
+
         handler: (response) =>
           completePayment(response, plan, kind).catch((error) =>
             setModal({
               type: "failure",
-              title: "Payment Failed",
+              title: "Verification Failed",
               message: error.message,
             }),
           ),
-        modal: { ondismiss: () => setLoading(null) },
-      });
-      checkout.open();
+
+        modal: {
+          ondismiss: () => {
+            setLoading(null)
+
+            setModal({
+              type: "cancelled",
+
+              title: "Payment Cancelled",
+
+              message: "The payment was cancelled. No changes were made.",
+            })
+          },
+        },
+      })
+
+      checkout.open()
     } catch (error) {
       setModal({
         type: "failure",
+
         title: "Payment Failed",
+
         message: error.message || "Please try again.",
-      });
+      })
     } finally {
-      setLoading(null);
+      setLoading(null)
     }
-  };
+  }
 
   return (
     <div
       className="min-h-screen"
-      style={{ background: "#09090B", fontFamily: "Inter, sans-serif" }}
+      style={{ background: "var(--bg-primary)", fontFamily: "Inter, sans-serif" }}
     >
       <nav
         className="flex items-center gap-4 px-8 py-4 sticky top-0 z-10"
         style={{
-          background: "rgba(9,9,11,0.9)",
+          background: "var(--nav-bg)",
+
           backdropFilter: "blur(20px)",
-          borderBottom: "1px solid rgba(255,255,255,0.05)",
+
+          borderBottom: "1px solid var(--border-faint)",
         }}
       >
         <button
           onClick={() => navigate("workspace")}
-          className="p-2 rounded-[10px] transition-all hover:bg-white/5"
+          className="p-2 rounded-[10px] transition-all hover:bg-[var(--overlay-light)]"
         >
-          <ArrowLeft size={16} color="#71717A" />
+          <ArrowLeft size={16} color="var(--text-muted)" />
         </button>
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-[9px] flex items-center justify-center gradient-primary">
-            <Sparkles size={12} color="#fff" />
+            <Sparkles size={12} color="var(--text-on-accent)" />
           </div>
           <span className="text-sm font-bold">
             Cotext<span className="text-gradient-primary">AI</span>
           </span>
         </div>
-        <span style={{ color: "#3F3F46" }}>/</span>
-        <span className="text-sm font-medium" style={{ color: "#A1A1AA" }}>
+        <span style={{ color: "var(--text-faint)" }}>/</span>
+        <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
           Billing
         </span>
         <button
           onClick={refreshAccount}
-          className="ml-auto p-2 rounded-[10px] hover:bg-white/5"
+          className="ml-auto p-2 rounded-[10px] hover:bg-[var(--overlay-light)]"
           title="Refresh billing"
         >
-          <RefreshCw size={15} color={refreshing ? "#A78BFA" : "#71717A"} />
+          <RefreshCw size={15} color={refreshing ? "#A78BFA" : "var(--text-muted)"} />
         </button>
       </nav>
 
@@ -190,37 +263,81 @@ export default function BillingScreen({ navigate, account, setAccount }) {
           <p className="text-sm font-medium mb-1" style={{ color: "#6C5CE7" }}>
             Workspace billing
           </p>
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
             Manage your plan
           </h1>
-          <p className="text-sm" style={{ color: "#71717A" }}>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             Keep your agents running with flexible credits.
           </p>
         </div>
+        {totalCredits > 0 && creditPercent < 20 && (
+          <div
+            className="mb-8 rounded-[14px] px-4 py-3 text-sm"
+            style={{
+              background: "rgba(245,158,11,0.08)",
+
+              border: "1px solid rgba(245,158,11,0.2)",
+
+              color: "#FCD34D",
+            }}
+          >
+            Your credit balance is running low. Upgrade your plan to keep using
+            AI features.
+          </div>
+        )}
+        {remainingCredits === 0 && (
+          <div
+            className="mb-8 flex items-center justify-between gap-4 rounded-[14px] px-4 py-3 text-sm"
+            style={{
+              background: "rgba(239,68,68,0.08)",
+
+              border: "1px solid rgba(239,68,68,0.2)",
+
+              color: "#FCA5A5",
+            }}
+          >
+            <span>You've run out of credits.</span>
+            <button
+              onClick={() =>
+                document
+                  .getElementById("available-plans")
+                  ?.scrollIntoView({ behavior: "smooth" })
+              }
+              className="font-semibold"
+              style={{ color: "#A78BFA" }}
+            >
+              Upgrade Plan
+            </button>
+          </div>
+        )}
 
         <section className="grid grid-cols-3 gap-4 mb-8">
           <div
             className="col-span-2 p-6 rounded-[20px]"
             style={{
-              background: "#111317",
+              background: "var(--bg-secondary)",
+
               border: "1px solid rgba(108,92,231,0.35)",
+
               boxShadow: "0 0 30px rgba(108,92,231,0.08)",
             }}
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs" style={{ color: "#71717A" }}>
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                   Current Plan
                 </p>
                 <div className="flex items-center gap-3 mt-2">
-                  <h2 className="text-2xl font-bold text-white">
-                    {account.plan}
+                  <h2 className="text-2xl font-bold text-[var(--text-primary)]">
+                    {currentPlan?.name || account.plan || "Free"}
                   </h2>
                   <span
                     className="text-[10px] font-semibold px-2 py-1 rounded-full"
                     style={{
                       background: "rgba(108,92,231,0.15)",
+
                       color: "#A78BFA",
+
                       border: "1px solid rgba(108,92,231,0.25)",
                     }}
                   >
@@ -232,16 +349,30 @@ export default function BillingScreen({ navigate, account, setAccount }) {
             </div>
             <div className="grid grid-cols-4 gap-4 mt-8">
               {[
-                ["Remaining Credits", account.credits],
-                ["Total Credits", account.totalCredits],
-                ["Days Remaining", account.daysRemaining],
-                ["Renewal Date", account.expiry],
+                ["Remaining Credits", remainingCredits],
+
+                ["Total Credits", totalCredits],
+
+                [
+                  "Days Remaining",
+                  account.planExpiresAt
+                    ? Math.max(
+                        0,
+                        Math.ceil(
+                          (new Date(account.planExpiresAt) - Date.now()) /
+                            86400000,
+                        ),
+                      )
+                    : account.daysRemaining || 0,
+                ],
+
+                ["Renewal Date", expiryDate],
               ].map(([label, value]) => (
                 <div key={label}>
-                  <p className="text-[11px] mb-1" style={{ color: "#52525B" }}>
+                  <p className="text-[11px] mb-1" style={{ color: "var(--text-faint)" }}>
                     {label}
                   </p>
-                  <p className="text-sm font-semibold text-white">{value}</p>
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">{value}</p>
                 </div>
               ))}
             </div>
@@ -249,78 +380,99 @@ export default function BillingScreen({ navigate, account, setAccount }) {
           <div
             className="p-6 rounded-[20px]"
             style={{
-              background: "#111317",
-              border: "1px solid rgba(255,255,255,0.06)",
+              background: "var(--bg-secondary)",
+
+              border: "1px solid var(--border-color)",
             }}
           >
-            <p className="text-xs" style={{ color: "#71717A" }}>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               Credits Remaining
             </p>
-            <p className="text-3xl font-bold text-white mt-3">
-              {account.credits}
+            <p className="text-3xl font-bold text-[var(--text-primary)] mt-3">
+              {remainingCredits}
             </p>
             <div
               className="h-1.5 rounded-full mt-5"
-              style={{ background: "rgba(255,255,255,0.06)" }}
+              style={{ background: "var(--border-color)" }}
             >
               <div
                 className="h-full rounded-full gradient-primary"
                 style={{
-                  width: `${Math.min(100, (account.credits / account.totalCredits) * 100)}%`,
+                  width: `${creditPercent}%`,
                 }}
               />
             </div>
-            <p className="text-xs mt-2" style={{ color: "#52525B" }}>
-              {account.totalCredits - account.credits} credits used
+            <p className="text-xs mt-2" style={{ color: "var(--text-faint)" }}>
+              {Math.max(0, totalCredits - remainingCredits)} credits used
             </p>
           </div>
         </section>
 
         <section className="grid grid-cols-4 gap-4 mb-10">
-          {usage.map(([label, value, change, Icon, color]) => (
-            <div
-              key={label}
-              className="p-5 rounded-[18px]"
-              style={{
-                background: "#111317",
-                border: "1px solid rgba(255,255,255,0.06)",
-              }}
-            >
-              <div className="flex justify-between mb-4">
-                <Icon size={16} color={color} />
-                <span className="text-[10px]" style={{ color: "#22C55E" }}>
-                  {change}
-                </span>
+          {usage.map(([label, value, change, Icon, color]) => {
+            const values = {
+              "Today's Credits Used": Math.max(
+                0,
+                totalCredits - remainingCredits,
+              ),
+
+              "Weekly Usage": Math.max(0, totalCredits - remainingCredits),
+
+              "Monthly Usage": Math.max(0, totalCredits - remainingCredits),
+
+              "Remaining Credits": remainingCredits,
+            }
+
+            return (
+              <div
+                key={label}
+                className="p-5 rounded-[18px]"
+                style={{
+                  background: "var(--bg-secondary)",
+
+                  border: "1px solid var(--border-color)",
+                }}
+              >
+                <div className="flex justify-between mb-4">
+                  <Icon size={16} color={color} />
+                  <span className="text-[10px]" style={{ color: "#22C55E" }}>
+                    {change}
+                  </span>
+                </div>
+                <p className="text-2xl font-bold text-[var(--text-primary)]">
+                  {values[label] ?? value ?? "-"}
+                </p>
+                <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                  {label}
+                </p>
               </div>
-              <p className="text-2xl font-bold text-white">{value}</p>
-              <p className="text-xs mt-1" style={{ color: "#71717A" }}>
-                {label}
-              </p>
-            </div>
-          ))}
+            )
+          })}
         </section>
 
         <section className="mb-10">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-white">
+          <div className="mb-4" id="available-plans">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">
               Available Plans
             </h2>
-            <p className="text-xs mt-1" style={{ color: "#71717A" }}>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
               Choose the plan that fits your workflow.
             </p>
           </div>
           <div className="grid grid-cols-3 gap-4">
             {plans.map((plan) => {
-              const active = account.plan === plan.name;
+              const active = currentPlan?.id === plan.id
+
               return (
                 <div
                   key={plan.name}
                   className="p-5 rounded-[18px] relative"
                   style={{
-                    background: active ? "rgba(108,92,231,0.09)" : "#111317",
+                    background: active ? "rgba(108,92,231,0.09)" : "var(--bg-secondary)",
+
                     border: active
                       ? "1px solid rgba(108,92,231,0.45)"
-                      : "1px solid rgba(255,255,255,0.06)",
+                      : "1px solid var(--border-color)",
                   }}
                 >
                   {active && (
@@ -328,20 +480,21 @@ export default function BillingScreen({ navigate, account, setAccount }) {
                       className="absolute top-4 right-4 text-[10px] font-semibold px-2 py-1 rounded-full"
                       style={{
                         background: "rgba(108,92,231,0.18)",
+
                         color: "#A78BFA",
                       }}
                     >
                       CURRENT
                     </span>
                   )}
-                  <p className="text-sm font-semibold text-white">
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">
                     {plan.name}
                   </p>
-                  <p className="text-2xl font-bold text-white mt-4">
+                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-4">
                     {plan.price}
                     <span
                       className="text-xs font-normal"
-                      style={{ color: "#71717A" }}
+                      style={{ color: "var(--text-muted)" }}
                     >
                       {" "}
                       / month
@@ -349,7 +502,7 @@ export default function BillingScreen({ navigate, account, setAccount }) {
                   </p>
                   <div
                     className="flex flex-col gap-2 mt-5 mb-5 text-xs"
-                    style={{ color: "#A1A1AA" }}
+                    style={{ color: "var(--text-secondary)" }}
                   >
                     <span className="flex items-center gap-2">
                       <Check size={13} color="#22C55E" />
@@ -366,9 +519,10 @@ export default function BillingScreen({ navigate, account, setAccount }) {
                     className="w-full py-2.5 rounded-[11px] text-xs font-semibold transition-all disabled:opacity-50"
                     style={{
                       background: active
-                        ? "rgba(255,255,255,0.06)"
+                        ? "var(--border-color)"
                         : "linear-gradient(135deg, #6C5CE7, #7C3AED)",
-                      color: "#fff",
+
+                      color: "var(--text-on-accent)",
                     }}
                   >
                     {loading === `plan-${plan.name}` ? (
@@ -380,7 +534,7 @@ export default function BillingScreen({ navigate, account, setAccount }) {
                     )}
                   </button>
                 </div>
-              );
+              )
             })}
           </div>
         </section>
@@ -389,15 +543,16 @@ export default function BillingScreen({ navigate, account, setAccount }) {
           <div
             className="rounded-[20px] overflow-hidden"
             style={{
-              background: "#111317",
-              border: "1px solid rgba(255,255,255,0.06)",
+              background: "var(--bg-secondary)",
+
+              border: "1px solid var(--border-color)",
             }}
           >
             <div
               className="px-5 py-4"
-              style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+              style={{ borderBottom: "1px solid var(--border-faint)" }}
             >
-              <h2 className="text-sm font-semibold text-white">Credit Costs</h2>
+              <h2 className="text-sm font-semibold text-[var(--text-primary)]">Credit Costs</h2>
             </div>
             {costs.map(([name, cost], index) => (
               <div
@@ -406,35 +561,42 @@ export default function BillingScreen({ navigate, account, setAccount }) {
                 style={{
                   borderBottom:
                     index < costs.length - 1
-                      ? "1px solid rgba(255,255,255,0.04)"
+                      ? "1px solid var(--border-subtle)"
                       : "none",
                 }}
               >
-                <span style={{ color: "#A1A1AA" }}>{name}</span>
-                <span className="font-medium text-white">{cost}</span>
+                <span style={{ color: "var(--text-secondary)" }}>{name}</span>
+                <span className="font-medium text-[var(--text-primary)]">{cost}</span>
               </div>
             ))}
           </div>
           <div
             className="rounded-[20px] p-5"
             style={{
-              background: "#111317",
-              border: "1px solid rgba(255,255,255,0.06)",
+              background: "var(--bg-secondary)",
+
+              border: "1px solid var(--border-color)",
             }}
           >
-            <h2 className="text-sm font-semibold text-white">Buy Credits</h2>
-            <p className="text-xs mt-2" style={{ color: "#71717A" }}>
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Buy Credits</h2>
+            <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
               Top up your workspace without changing your current plan.
             </p>
             <button
               onClick={() =>
                 pay(
-                  { name: "Credit top-up", price: "₹99", credits: 250 },
+                  {
+                    id: "credits",
+                    name: "Credit top-up",
+                    price: "₹99",
+                    credits: 250,
+                  },
+
                   "credits",
                 )
               }
               disabled={Boolean(loading)}
-              className="mt-6 w-full py-2.5 rounded-[11px] text-xs font-semibold text-white gradient-primary disabled:opacity-50"
+              className="mt-6 w-full py-2.5 rounded-[11px] text-xs font-semibold text-[var(--text-primary)] gradient-primary disabled:opacity-50"
             >
               {loading === "credits-Credit top-up" ? (
                 <LoaderCircle size={14} className="mx-auto" />
@@ -451,35 +613,38 @@ export default function BillingScreen({ navigate, account, setAccount }) {
           className="fixed inset-0 z-50 flex items-center justify-center p-6"
           style={{
             background: "rgba(0,0,0,0.7)",
+
             backdropFilter: "blur(10px)",
           }}
         >
           <div
             className="w-full max-w-sm rounded-[22px] p-6 animate-fade-in-up"
             style={{
-              background: "#111317",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "var(--bg-secondary)",
+
+              border: "1px solid var(--border-medium)",
             }}
           >
             <div className="flex justify-between">
               <div>
-                <p className="text-base font-semibold text-white">
+                <p className="text-base font-semibold text-[var(--text-primary)]">
                   {modal.title}
                 </p>
-                <p className="text-xs mt-2" style={{ color: "#71717A" }}>
+                <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
                   {modal.message}
                 </p>
               </div>
               <button onClick={() => setModal(null)}>
-                <X size={15} color="#71717A" />
+                <X size={15} color="var(--text-muted)" />
               </button>
             </div>
             <button
               onClick={() => {
-                setModal(null);
-                refreshAccount();
+                setModal(null)
+
+                refreshAccount()
               }}
-              className="w-full mt-6 py-2.5 rounded-[12px] text-sm font-semibold text-white gradient-primary"
+              className="w-full mt-6 py-2.5 rounded-[12px] text-sm font-semibold text-[var(--text-primary)] gradient-primary"
             >
               {modal.type === "success" ? "Continue" : "Try again"}
             </button>
@@ -487,5 +652,5 @@ export default function BillingScreen({ navigate, account, setAccount }) {
         </div>
       )}
     </div>
-  );
+  )
 }
