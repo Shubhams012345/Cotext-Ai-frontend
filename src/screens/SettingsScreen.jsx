@@ -124,7 +124,7 @@ export default function SettingsScreen({ navigate, account, setAccount }) {
     >
       {/* Nav */}
       <nav
-        className="flex items-center gap-4 px-8 py-4 sticky top-0 z-10"
+        className="flex items-center gap-4 px-4 sm:px-8 py-4 sticky top-0 z-10"
         style={{
           background: "var(--nav-bg)",
           backdropFilter: "blur(20px)",
@@ -168,10 +168,10 @@ export default function SettingsScreen({ navigate, account, setAccount }) {
         )}
       </nav>
 
-      <div className="max-w-[900px] mx-auto px-8 py-10 flex gap-8">
+      <div className="max-w-[900px] mx-auto px-4 sm:px-8 py-6 sm:py-10 flex flex-col md:flex-row gap-6 md:gap-8">
         {/* Sidebar nav */}
-        <div className="w-52 shrink-0">
-          <nav className="flex flex-col gap-1 sticky top-20">
+        <div className="w-full md:w-52 shrink-0">
+          <nav className="flex md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-2 md:pb-0 scrollbar-none sticky top-16 md:top-20 z-[5]">
             {sections.map((s) => (
               <button
                 key={s.id}
@@ -180,7 +180,7 @@ export default function SettingsScreen({ navigate, account, setAccount }) {
                     ? navigate("billing")
                     : setActiveSection(s.id)
                 }
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-sm font-medium transition-all text-left ${
+                className={`flex items-center gap-2.5 sm:gap-3 px-3.5 py-2.5 rounded-[12px] text-sm font-medium transition-all whitespace-nowrap shrink-0 md:shrink md:w-full text-left ${
                   activeSection === s.id
                     ? "bg-[var(--border-color)] text-[var(--text-primary)]"
                     : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--overlay-light)]"
@@ -209,7 +209,7 @@ export default function SettingsScreen({ navigate, account, setAccount }) {
                 </p>
               </div>
               <div
-                className="flex items-center gap-5 p-6 rounded-[20px]"
+                className="flex flex-col sm:flex-row sm:items-center gap-5 p-5 sm:p-6 rounded-[20px]"
                 style={{
                   background: "var(--bg-secondary)",
                   border: "1px solid var(--border-color)",
@@ -226,11 +226,11 @@ export default function SettingsScreen({ navigate, account, setAccount }) {
                     initials
                   )}
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className="text-base font-semibold text-[var(--text-primary)]">
                     {account?.name || "User"}
                   </p>
-                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                  <p className="text-sm truncate" style={{ color: "var(--text-muted)" }}>
                     {account?.email || "Email unavailable"}
                   </p>
                   <span
@@ -245,7 +245,7 @@ export default function SettingsScreen({ navigate, account, setAccount }) {
                   </span>
                 </div>
                 <button
-                  className="px-4 py-2 rounded-[12px] text-sm font-medium transition-all hover:opacity-80"
+                  className="px-4 py-2 rounded-[12px] text-sm font-medium transition-all hover:opacity-80 self-start sm:self-auto shrink-0"
                   style={{
                     background: "var(--border-color)",
                     border: "1px solid var(--white-overlay-08)",
@@ -256,7 +256,7 @@ export default function SettingsScreen({ navigate, account, setAccount }) {
                 </button>
               </div>
               <div
-                className="flex flex-col gap-4 p-6 rounded-[20px]"
+                className="flex flex-col gap-4 p-5 sm:p-6 rounded-[20px]"
                 style={{
                   background: "var(--bg-secondary)",
                   border: "1px solid var(--border-color)",

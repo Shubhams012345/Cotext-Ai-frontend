@@ -90,7 +90,7 @@ export default function ProfileScreen({ navigate, account }) {
     >
       {/* Nav */}
       <nav
-        className="flex items-center gap-4 px-8 py-4 sticky top-0 z-10"
+        className="flex items-center gap-4 px-4 sm:px-8 py-4 sticky top-0 z-10"
         style={{
           background: "var(--nav-bg)",
           backdropFilter: "blur(20px)",
@@ -120,7 +120,7 @@ export default function ProfileScreen({ navigate, account }) {
         </span>
       </nav>
 
-      <div className="max-w-[860px] mx-auto px-8 py-10">
+      <div className="max-w-[860px] mx-auto px-4 sm:px-8 py-6 sm:py-10">
         {/* Profile hero */}
         <div
           className="rounded-[24px] overflow-hidden mb-6 animate-fade-in-up"
@@ -154,8 +154,8 @@ export default function ProfileScreen({ navigate, account }) {
           </div>
 
           {/* Profile info */}
-          <div className="px-8 pb-6">
-            <div className="flex items-end justify-between -mt-8 mb-4">
+          <div className="px-4 sm:px-8 pb-6">
+            <div className="flex flex-wrap items-end justify-between -mt-8 mb-4 gap-3">
               <div
                 className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold gradient-primary"
                 style={{
@@ -256,11 +256,11 @@ export default function ProfileScreen({ navigate, account }) {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-6 animate-fade-in-up delay-100">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 animate-fade-in-up delay-100">
           {profileStats.map((stat) => (
             <div
               key={stat.label}
-              className="p-5 rounded-[20px]"
+              className="p-4 sm:p-5 rounded-[20px]"
               style={{
                 background: "var(--bg-secondary)",
                 border: "1px solid var(--border-color)",
@@ -289,7 +289,7 @@ export default function ProfileScreen({ navigate, account }) {
           }}
         >
           <div
-            className="px-6 py-4"
+            className="px-4 sm:px-6 py-3.5 sm:py-4"
             style={{ borderBottom: "1px solid var(--border-faint)" }}
           >
             <h2 className="text-sm font-semibold text-[var(--text-primary)]">
@@ -300,7 +300,7 @@ export default function ProfileScreen({ navigate, account }) {
             {recentActivity.map((item, i) => (
               <div
                 key={item.detail}
-                className="flex items-center gap-4 px-6 py-4"
+                className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3.5 sm:py-4"
                 style={{
                   borderBottom:
                     i < recentActivity.length - 1
@@ -325,7 +325,7 @@ export default function ProfileScreen({ navigate, account }) {
                     {item.detail}
                   </p>
                 </div>
-                <span className="text-xs shrink-0" style={{ color: "var(--text-faint)" }}>
+                <span className="text-xs shrink-0 whitespace-nowrap" style={{ color: "var(--text-faint)" }}>
                   {item.time}
                 </span>
               </div>

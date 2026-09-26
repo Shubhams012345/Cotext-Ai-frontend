@@ -90,9 +90,9 @@ export default function LoginScreen({ onLogin }) {
         aria-hidden="true"
       />
 
-      <div className="relative w-full max-w-md px-6 animate-fade-in-up">
+      <div className="relative w-full max-w-md px-4 sm:px-6 py-6 animate-fade-in-up">
         {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-10">
+        <div className="flex items-center justify-center gap-3 mb-8 sm:mb-10">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center gradient-primary glow-primary">
             <Sparkles size={18} color="var(--text-on-accent)" />
           </div>
@@ -106,7 +106,7 @@ export default function LoginScreen({ onLogin }) {
 
         {/* Card */}
         <div
-          className="rounded-[22px] p-8"
+          className="rounded-[22px] p-6 sm:p-8"
           style={{
             background: "var(--bg-secondary)",
             border: "1px solid var(--border-color)",
@@ -193,7 +193,7 @@ export default function LoginScreen({ onLogin }) {
 
           {/* Trust signals */}
           <div
-            className="flex items-center gap-6 mt-8 pt-6"
+            className="flex flex-wrap items-center justify-center sm:justify-start gap-3 sm:gap-6 mt-6 sm:mt-8 pt-6"
             style={{ borderTop: "1px solid var(--border-faint)" }}
           >
             <div className="flex items-center gap-2">

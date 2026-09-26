@@ -35,6 +35,8 @@ import {
   PanelRightOpen,
   Share2,
   CreditCard,
+  Menu,
+  ArrowLeft,
 } from "lucide-react"
 import {
   createConversation,
@@ -140,28 +142,33 @@ function MarkdownContent({ content }) {
   const flushTable = () => {
     if (table.length) {
       blocks.push(
-        <table
-          key={`table-${blocks.length}`}
-          className="w-full text-left border-collapse"
+        <div
+          key={`table-wrapper-${blocks.length}`}
+          className="w-full max-w-full overflow-x-auto my-2"
         >
-          <tbody>
-            {table.map((row, index) => (
-              <tr key={index}>
-                {row.map((cell, cellIndex) => (
-                  <td
-                    key={cellIndex}
-                    className="border border-[var(--border-medium)] px-2 py-1"
-                  >
-                    {renderInlineMarkdown(
-                      cell.trim(),
-                      `table-${index}-${cellIndex}`,
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>,
+          <table
+            key={`table-${blocks.length}`}
+            className="w-full text-left border-collapse min-w-full"
+          >
+            <tbody>
+              {table.map((row, index) => (
+                <tr key={index}>
+                  {row.map((cell, cellIndex) => (
+                    <td
+                      key={cellIndex}
+                      className="border border-[var(--border-medium)] px-2 py-1"
+                    >
+                      {renderInlineMarkdown(
+                        cell.trim(),
+                        `table-${index}-${cellIndex}`,
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>,
       )
       table = []
     }
@@ -213,7 +220,10 @@ function MarkdownContent({ content }) {
       return
     }
     blocks.push(
-      <p key={`paragraph-${index}`} className="whitespace-pre-wrap">
+      <p
+        key={`paragraph-${index}`}
+        className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+      >
         {renderInlineMarkdown(line, `paragraph-${index}`)}
       </p>,
     )
@@ -321,6 +331,8 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
   const [copied, setCopied] = useState(null)
   const [rateLimit, setRateLimit] = useState(false)
   const [mobileView, setMobileView] = useState("chat")
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [mobileArtifactOpen, setMobileArtifactOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === "undefined") return false
     return window.innerWidth < 768
@@ -565,6 +577,8 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
       const nextIsMobile = window.innerWidth < 768
       setIsMobile(nextIsMobile)
       if (!nextIsMobile) {
+        setMobileSidebarOpen(false)
+        setMobileArtifactOpen(false)
         setMobileView("chat")
       }
     }
@@ -580,6 +594,8 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
       setConversations((current) => [conversation, ...current])
       setActiveConv(conversation.id)
       setChatMessages([])
+      setMobileSidebarOpen(false)
+      setMobileView("chat")
     } catch (error) {
       showError(error, "Unable to create a conversation.")
     }
@@ -839,18 +855,18 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
           {conversationError}
         </div>
       )}
-      {!isMobile && (
-        <aside
-          className="workspace-sidebar sidebar-transition flex flex-col shrink-0 relative"
-          style={{
-            width: sidebarCollapsed ? "0px" : "280px",
-            opacity: sidebarCollapsed ? 0 : 1,
-            overflow: "hidden",
-            background: "var(--bg-sidebar)",
-            borderRight: "1px solid var(--border-faint)",
-          }}
-        >
-          <div className="flex flex-col h-full min-w-[280px] w-full max-w-full">
+      {/* Desktop / Tablet Sidebar */}
+      <aside
+        className={`workspace-sidebar sidebar-transition hidden md:flex flex-col shrink-0 relative ${
+          sidebarCollapsed ? "w-0 opacity-0" : "w-[250px] lg:w-[280px] opacity-100"
+        }`}
+        style={{
+          overflow: "hidden",
+          background: "var(--bg-sidebar)",
+          borderRight: "1px solid var(--border-faint)",
+        }}
+      >
+        <div className="flex flex-col h-full w-[250px] lg:w-[280px] min-w-0 max-w-full overflow-hidden">
           {/* Sidebar Top */}
           <div
             className="p-4 shrink-0"
@@ -881,7 +897,7 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
 
             {/* Search */}
             <div
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-[12px] transition-all"
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-[12px] transition-all w-full min-w-0"
               style={{
                 background: "var(--border-subtle)",
                 border: "1px solid var(--border-color)",
@@ -891,7 +907,7 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
               <input
                 type="text"
                 placeholder="Search conversations..."
-                className="flex-1 bg-transparent text-sm text-[var(--text-primary)] placeholder-[var(--text-faint)] outline-none"
+                className="flex-1 bg-transparent text-sm text-[var(--text-primary)] placeholder-[var(--text-faint)] outline-none min-w-0"
               />
             </div>
           </div>
@@ -913,7 +929,7 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
           </div>
 
           {/* Conversations */}
-          <div className="flex-1 overflow-y-auto px-3 py-2">
+          <div className="flex-1 overflow-y-auto px-3 py-2 min-h-0">
             {conversationsLoading ? (
               <div className="flex flex-col gap-3 px-2">
                 {[1, 2, 3, 4].map((item) => (
@@ -967,9 +983,9 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
                               onClick={() => setActiveConv(conv.id)}
                               className="w-full text-left"
                             >
-                              <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-start justify-between gap-2 min-w-0">
                                 <p
-                                  className="text-[13px] font-medium truncate leading-tight"
+                                  className="text-[13px] font-medium truncate flex-1 min-w-0 leading-tight"
                                   style={{
                                     color: "var(--text-primary)",
                                   }}
@@ -1047,15 +1063,15 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
                 }}
               >
                 {account?.name
-  ?.split(" ")
-  .map((word) => word[0])
-  .join("")
-  .substring(0, 2)
-  .toUpperCase() || "U"}
+                  ?.split(" ")
+                  .map((word) => word[0])
+                  .join("")
+                  .substring(0, 2)
+                  .toUpperCase() || "U"}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-semibold text-[var(--text-primary)] truncate">
-                 {account?.name || "User"}
+                  {account?.name || "User"}
                 </p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span
@@ -1089,139 +1105,201 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
           </div>
         </div>
       </aside>
-      )}
 
-      {!isMobile && sidebarCollapsed && (
+      {/* Desktop/Tablet Expand Sidebar Button */}
+      {sidebarCollapsed && (
         <button
           onClick={() => setSidebarCollapsed(false)}
-          className="absolute left-3 top-4 z-20 p-2 rounded-[10px] transition-all hover:bg-[var(--border-medium)] animate-fade-in"
+          className="hidden md:block absolute left-3 top-4 z-20 p-2 rounded-[10px] transition-all hover:bg-[var(--border-medium)] animate-fade-in"
           style={{
             background: "rgba(15,17,21,0.9)",
             border: "1px solid var(--white-overlay-08)",
           }}
+          title="Expand sidebar"
         >
           <ChevronRight size={15} color="var(--text-secondary)" />
         </button>
       )}
 
-      {isMobile && mobileView === "sidebar" && (
-        <div className="fixed inset-0 z-40 bg-black/30 md:hidden" onClick={() => setMobileView("chat")} />
+      {/* Mobile Drawer Backdrop */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden animate-fade-in"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
       )}
 
-      {isMobile && mobileView === "sidebar" && (
-        <aside
-          className="fixed inset-y-0 left-0 z-50 flex w-[82%] max-w-[280px] flex-col overflow-hidden border-r bg-[var(--bg-sidebar)] md:hidden"
-          style={{ borderRight: "1px solid var(--border-faint)" }}
-        >
-          <div className="flex h-full min-w-0 w-full max-w-full flex-col">
-            <div className="flex items-center gap-2.5 border-b p-4" style={{ borderBottom: "1px solid var(--border-faint)" }}>
-              <div className="flex h-8 w-8 items-center justify-center rounded-[10px] gradient-primary">
-                <Sparkles size={14} color="var(--text-on-accent)" />
-              </div>
-              <span className="flex-1 text-base font-bold tracking-tight" style={{ letterSpacing: "-0.02em" }}>
-                Cotext<span className="text-gradient-primary">AI</span>
-              </span>
-              <button onClick={() => setMobileView("chat")} className="p-1.5 rounded-lg hover:bg-[var(--overlay-light)]" title="Close sidebar">
-                <ChevronLeft size={15} color="var(--text-muted)" />
-              </button>
+      {/* Mobile Drawer Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-[85%] max-w-[300px] flex-col overflow-hidden bg-[var(--bg-sidebar)] shadow-2xl transition-transform duration-300 ease-in-out md:hidden border-r ${
+          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
+        }`}
+        style={{ borderRight: "1px solid var(--border-faint)" }}
+      >
+        <div className="flex h-full min-w-0 w-full max-w-full flex-col">
+          <div className="flex items-center gap-2.5 border-b p-4 shrink-0" style={{ borderBottom: "1px solid var(--border-faint)" }}>
+            <div className="flex h-8 w-8 items-center justify-center rounded-[10px] gradient-primary shrink-0" style={{ boxShadow: "0 0 14px rgba(108,92,231,0.35)" }}>
+              <Sparkles size={14} color="var(--text-on-accent)" />
             </div>
-            <div className="px-4 pb-3 pt-4" style={{ borderBottom: "1px solid var(--border-faint)" }}>
-              <div className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5" style={{ background: "var(--border-subtle)", border: "1px solid var(--border-color)" }}>
-                <Search size={14} color="var(--text-faint)" />
-                <input type="text" placeholder="Search conversations..." className="w-full bg-transparent text-sm text-[var(--text-primary)] placeholder-[var(--text-faint)] outline-none" />
-              </div>
+            <span className="flex-1 text-base font-bold tracking-tight" style={{ letterSpacing: "-0.02em" }}>
+              Cotext<span className="text-gradient-primary">AI</span>
+            </span>
+            <button
+              onClick={() => setMobileSidebarOpen(false)}
+              className="p-1.5 rounded-lg hover:bg-[var(--overlay-light)] transition-colors"
+              title="Close sidebar"
+            >
+              <X size={16} color="var(--text-muted)" />
+            </button>
+          </div>
+          <div className="px-4 pb-3 pt-4 shrink-0">
+            <div className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5" style={{ background: "var(--border-subtle)", border: "1px solid var(--border-color)" }}>
+              <Search size={14} color="var(--text-faint)" />
+              <input type="text" placeholder="Search conversations..." className="w-full bg-transparent text-sm text-[var(--text-primary)] placeholder-[var(--text-faint)] outline-none min-w-0" />
             </div>
-            <div className="flex-1 overflow-y-auto px-3 py-2">
-              {conversationsLoading ? (
-                <div className="flex flex-col gap-3 px-2">
-                  {[1,2,3,4].map((item) => (
-                    <div key={item} className="h-12 rounded-[12px] animate-pulse bg-[var(--border-subtle)]" />
-                  ))}
-                </div>
-              ) : conversations.length ? (
-                convGroups.map((group) => {
-                  const groupConvs = conversations.filter((c) => c.group === group)
-                  if (!groupConvs.length) return null
-                  return (
-                    <div key={group} className="mb-4">
-                      <p className="px-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-faint)" }}>{group}</p>
-                      <div className="mt-2 flex flex-col gap-1">
-                        {groupConvs.map((conv) => (
-                          <button
-                            key={conv.id}
-                            onClick={() => {
-                              setActiveConv(conv.id)
-                              setMobileView("chat")
-                            }}
-                            className={`w-full rounded-[12px] px-3 py-2.5 text-left transition-all ${activeConv === conv.id ? "conv-active" : "hover:bg-[var(--overlay-light)]"}`}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="min-w-0 flex-1 truncate text-[13px] font-medium leading-tight" style={{ color: "var(--text-primary)" }}>{conv.title || "New chat"}</p>
-                              <span className="shrink-0 text-[10px]" style={{ color: "var(--text-faint)" }}>{conv.time}</span>
-                            </div>
-                            <p className="mt-0.5 truncate text-[11px] leading-tight" style={{ color: "var(--text-faint)" }}>{conv.preview}</p>
-                          </button>
-                        ))}
-                      </div>
+          </div>
+          <div className="px-4 pb-2 shrink-0">
+            <button
+              onClick={() => {
+                handleNewChat()
+                setMobileSidebarOpen(false)
+              }}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-[14px] text-sm font-semibold transition-all duration-200 hover:opacity-90 active:scale-[0.97]"
+              style={{
+                background: "linear-gradient(135deg, #6C5CE7 0%, #7C3AED 100%)",
+                boxShadow: "0 6px 20px rgba(108,92,231,0.3)",
+                color: "var(--text-on-accent)",
+              }}
+            >
+              <Plus size={16} />
+              New Chat
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-3 py-2 min-h-0">
+            {conversationsLoading ? (
+              <div className="flex flex-col gap-3 px-2">
+                {[1, 2, 3, 4].map((item) => (
+                  <div key={item} className="h-12 rounded-[12px] animate-pulse bg-[var(--border-subtle)]" />
+                ))}
+              </div>
+            ) : conversations.length ? (
+              convGroups.map((group) => {
+                const groupConvs = conversations.filter((c) => c.group === group)
+                if (!groupConvs.length) return null
+                return (
+                  <div key={group} className="mb-4">
+                    <p className="px-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-faint)" }}>{group}</p>
+                    <div className="mt-2 flex flex-col gap-1">
+                      {groupConvs.map((conv) => (
+                        <button
+                          key={conv.id}
+                          onClick={() => {
+                            setActiveConv(conv.id)
+                            setMobileSidebarOpen(false)
+                            setMobileView("chat")
+                          }}
+                          className={`w-full rounded-[12px] px-3 py-2.5 text-left transition-all ${activeConv === conv.id ? "conv-active" : "hover:bg-[var(--overlay-light)]"}`}
+                        >
+                          <div className="flex items-start justify-between gap-2 min-w-0">
+                            <p className="min-w-0 flex-1 truncate text-[13px] font-medium leading-tight" style={{ color: "var(--text-primary)" }}>{conv.title || "New chat"}</p>
+                            <span className="shrink-0 text-[10px]" style={{ color: "var(--text-faint)" }}>{conv.time}</span>
+                          </div>
+                          <p className="mt-0.5 truncate text-[11px] leading-tight" style={{ color: "var(--text-faint)" }}>{conv.preview}</p>
+                        </button>
+                      ))}
                     </div>
-                  )
-                })
-              ) : (
-                <div className="px-2 py-8 text-center">
-                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>Start your first conversation.</p>
-                </div>
-              )}
-            </div>
-            <div className="shrink-0 border-t p-3" style={{ borderTop: "1px solid var(--border-faint)" }}>
-              <div className="flex items-center gap-3 rounded-[14px] px-3 py-2.5" style={{ border: "1px solid var(--border-faint)" }}>
-                <div className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold gradient-primary">
-                  {account?.name?.split(" ").map((word) => word[0]).join("").substring(0, 2).toUpperCase() || "U"}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-semibold" style={{ color: "var(--text-primary)" }}>{account?.name || "User"}</p>
-                  <div className="mt-0.5 flex items-center gap-2">
-                    <span className="text-[10px] font-semibold" style={{ color: "#A78BFA" }}>{account.plan?.charAt(0).toUpperCase() + account.plan?.slice(1)}</span>
-                    <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{account.credits} credits</span>
                   </div>
+                )
+              })
+            ) : (
+              <div className="px-2 py-8 text-center">
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>Start your first conversation.</p>
+              </div>
+            )}
+          </div>
+          <div className="shrink-0 border-t p-3" style={{ borderTop: "1px solid var(--border-faint)" }}>
+            <div className="flex items-center gap-3 rounded-[14px] px-3 py-2.5" style={{ border: "1px solid var(--border-faint)" }}>
+              <div className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold gradient-primary shrink-0">
+                {account?.name?.split(" ").map((word) => word[0]).join("").substring(0, 2).toUpperCase() || "U"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-semibold" style={{ color: "var(--text-primary)" }}>{account?.name || "User"}</p>
+                <div className="mt-0.5 flex items-center gap-2">
+                  <span className="text-[10px] font-semibold" style={{ color: "#A78BFA" }}>{account.plan?.charAt(0).toUpperCase() + account.plan?.slice(1)}</span>
+                  <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{account.credits} credits</span>
                 </div>
+              </div>
+              <div className="flex gap-1 shrink-0">
+                <button
+                  onClick={() => {
+                    navigate("settings")
+                    setMobileSidebarOpen(false)
+                  }}
+                  className="p-1.5 rounded-lg transition-all hover:bg-[var(--border-medium)]"
+                  title="Settings"
+                >
+                  <Settings size={14} color="var(--text-muted)" />
+                </button>
+                <button
+                  onClick={() => {
+                    navigate("login")
+                    setMobileSidebarOpen(false)
+                  }}
+                  className="p-1.5 rounded-lg transition-all hover:bg-[var(--border-medium)]"
+                  title="Logout"
+                >
+                  <LogOut size={14} color="var(--text-muted)" />
+                </button>
               </div>
             </div>
           </div>
-        </aside>
-      )}
+        </div>
+      </aside>
 
       {shouldShowChat && (
       <main className="workspace-main flex-1 flex flex-col min-w-0 relative overflow-hidden w-full max-w-full">
         {/* Chat header */}
         <div
-          className="workspace-header flex items-center justify-between px-6 py-4 shrink-0"
+          className="workspace-header flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 shrink-0 min-w-0"
           style={{ borderBottom: "1px solid var(--border-faint)" }}
         >
-          <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>
-                Workspace
-              </span>
-              <span style={{ color: "var(--text-faint)" }}>/</span>
-              <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>
+          <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
+            {/* Mobile hamburger menu button */}
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="p-1.5 -ml-1.5 rounded-lg hover:bg-[var(--overlay-light)] transition-colors md:hidden shrink-0"
+              title="Open sidebar"
+            >
+              <Menu size={18} color="var(--text-muted)" />
+            </button>
+
+            <div className="min-w-0 flex-1">
+              <div className="hidden sm:flex items-center gap-2 mb-0.5 min-w-0">
+                <span className="text-[11px] shrink-0" style={{ color: "var(--text-faint)" }}>
+                  Workspace
+                </span>
+                <span style={{ color: "var(--text-faint)" }}>/</span>
+                <span className="text-[11px] truncate" style={{ color: "var(--text-faint)" }}>
+                  {conversations.find(
+                    (conversation) => conversation.id === activeConv,
+                  )?.title || "New conversation"}
+                </span>
+              </div>
+              <h2
+                className="text-[14px] sm:text-[15px] font-semibold text-[var(--text-primary)] truncate"
+                style={{ letterSpacing: "-0.01em" }}
+              >
                 {conversations.find(
                   (conversation) => conversation.id === activeConv,
                 )?.title || "New conversation"}
-              </span>
+              </h2>
             </div>
-            <h2
-              className="text-[15px] font-semibold text-[var(--text-primary)]"
-              style={{ letterSpacing: "-0.01em" }}
-            >
-              {conversations.find(
-                (conversation) => conversation.id === activeConv,
-              )?.title || "New conversation"}
-            </h2>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Model badge */}
             <div
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full shrink-0"
               style={{
                 background: "rgba(108,92,231,0.12)",
                 border: "1px solid rgba(108,92,231,0.25)",
@@ -1229,15 +1307,17 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
             >
               {modelIcons[activeModel]}
               <span
-                className="text-xs font-medium"
+                className="text-xs font-medium hidden sm:inline"
                 style={{ color: "#6C5CE7" }}
               >
                 {models.find((model) => model.id === activeModel)?.label}
               </span>
             </div>
+
+            {/* Billing */}
             <button
               onClick={() => navigate("billing")}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all hover:bg-[var(--overlay-light)]"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all hover:bg-[var(--overlay-light)] shrink-0"
               style={{ border: "1px solid var(--border-color)" }}
               title="Open billing"
             >
@@ -1245,22 +1325,30 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
               <span className="text-[11px] font-semibold text-[var(--text-primary)]">
                 {account.plan?.charAt(0).toUpperCase() + account.plan?.slice(1)}
               </span>
-              <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+              <span className="text-[11px] hidden xl:inline" style={{ color: "var(--text-muted)" }}>
                 {account.credits} / {account.totalCredits}
               </span>
-              <CreditCard size={12} color="var(--text-muted)" />
+              <CreditCard size={12} color="var(--text-muted)" className="hidden sm:inline" />
             </button>
+
             {/* Connection */}
-            <div className="flex items-center gap-1.5">
+            <div className="hidden lg:flex items-center gap-1.5 shrink-0">
               <div className="status-online" />
-              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+              <span className="text-xs hidden xl:inline" style={{ color: "var(--text-muted)" }}>
                 Connected
               </span>
             </div>
+
             {/* Toggle artifact panel */}
             <button
-              onClick={() => setArtifactPanelOpen(!artifactPanelOpen)}
-              className="p-2 rounded-[10px] transition-all hover:bg-[var(--overlay-light)]"
+              onClick={() => {
+                if (typeof window !== "undefined" && window.innerWidth < 768) {
+                  setMobileArtifactOpen(true)
+                } else {
+                  setArtifactPanelOpen(!artifactPanelOpen)
+                }
+              }}
+              className="p-1.5 sm:p-2 rounded-[10px] transition-all hover:bg-[var(--overlay-light)] shrink-0 relative"
               style={{ border: "1px solid var(--border-color)" }}
               title="Toggle artifact panel"
             >
@@ -1269,13 +1357,21 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
               ) : (
                 <PanelRightOpen size={16} color="var(--text-muted)" />
               )}
+              {artifacts.length > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center gradient-primary md:hidden"
+                  style={{ color: "var(--text-on-accent)" }}
+                >
+                  {artifacts.length}
+                </span>
+              )}
             </button>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="workspace-messages flex-1 overflow-y-auto px-6 py-8">
-          <div className="max-w-[720px] mx-auto flex flex-col gap-8">
+        <div className="workspace-messages flex-1 overflow-y-auto px-4 sm:px-6 py-6 sm:py-8 pb-48 md:pb-8 min-w-0">
+          <div className="max-w-[720px] mx-auto flex flex-col gap-6 sm:gap-8 w-full min-w-0">
             {messagesLoading ? (
               <div className="flex flex-col gap-4">
                 {[1, 2, 3].map((item) => (
@@ -1316,10 +1412,10 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
                   <div
                     className={`flex flex-col gap-3 ${
                       msg.role === "user" ? "items-end" : "items-start"
-                    } max-w-[85%]`}
+                    } max-w-[92%] sm:max-w-[85%] min-w-0`}
                   >
                     <div
-                      className={`px-5 py-3.5 rounded-[20px] text-sm leading-relaxed`}
+                      className={`px-4 sm:px-5 py-3 sm:py-3.5 rounded-[20px] text-sm leading-relaxed max-w-full break-words [overflow-wrap:anywhere]`}
                       style={
                         msg.role === "user"
                           ? {
@@ -1356,7 +1452,7 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
                     )}
                     {msg.code && (
                       <div
-                        className="w-full rounded-[16px] overflow-hidden"
+                        className="w-full max-w-full rounded-[16px] overflow-hidden min-w-0"
                         style={{
                           background: "var(--surface-tertiary)",
                           border: "1px solid var(--white-overlay-07)",
@@ -1364,13 +1460,13 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
                       >
                         {/* Code header */}
                         <div
-                          className="flex items-center justify-between px-4 py-2.5"
+                          className="flex items-center justify-between px-4 py-2.5 min-w-0"
                           style={{
                             borderBottom: "1px solid var(--border-color)",
                           }}
                         >
-                          <div className="flex items-center gap-2">
-                            <div className="flex gap-1.5">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex gap-1.5 shrink-0">
                               <div
                                 className="w-3 h-3 rounded-full"
                                 style={{ background: "#EF4444" }}
@@ -1385,7 +1481,7 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
                               />
                             </div>
                             <span
-                              className="text-[11px] font-medium ml-1"
+                              className="text-[11px] font-medium ml-1 truncate"
                               style={{
                                 color: "var(--text-faint)",
                                 fontFamily: "JetBrains Mono, monospace",
@@ -1394,7 +1490,7 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
                               {msg.code.lang}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 shrink-0">
                             <button
                               onClick={() =>
                                 handleCopy(msg.id, msg.code.content)
@@ -1445,7 +1541,7 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
                         </div>
                         {/* Code content */}
                         <pre
-                          className="p-4 text-[12.5px] leading-[1.8] overflow-x-auto"
+                          className="p-3 sm:p-4 text-[12px] sm:text-[12.5px] leading-[1.8] overflow-x-auto max-w-full min-w-0"
                           style={{
                             fontFamily: "JetBrains Mono, monospace",
                             color: "var(--code-text)",
@@ -1487,7 +1583,7 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
                         key={image}
                         src={image}
                         alt="Generated result"
-                        className="max-w-full rounded-[16px]"
+                        className="max-w-full h-auto rounded-[16px] object-contain"
                       />
                     ))}
                     {msg.attachments?.map((attachment) => (
@@ -1545,15 +1641,15 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
         </div>
 
         {/* Input area */}
-        <div className="workspace-input-wrap px-6 pb-6 shrink-0">
-          <div className="max-w-[720px] mx-auto">
+        <div className="workspace-input-wrap fixed bottom-0 left-0 right-0 z-20 px-3 pb-3 pt-2 bg-[var(--bg-primary)]/95 backdrop-blur-md md:static md:bg-transparent md:px-6 md:pb-6 shrink-0 border-t border-[var(--border-faint)] md:border-t-0">
+          <div className="max-w-[720px] mx-auto w-full min-w-0">
             {/* Model selector */}
-            <div className="flex items-center gap-1 mb-3 overflow-x-auto pb-1">
+            <div className="flex items-center gap-1 mb-2 sm:mb-3 overflow-x-auto pb-1 scrollbar-none">
               {models.map((m) => (
                 <button
                   key={m.id}
                   onClick={() => setActiveModel(m.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all duration-200 shrink-0 ${
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all duration-200 shrink-0 ${
                     activeModel === m.id ? "segment-active" : "hover:bg-[var(--overlay-light)]"
                   }`}
                   style={{
@@ -1565,8 +1661,8 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-2 mb-3 px-1">
-              <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+            <div className="flex items-center gap-2 mb-2 sm:mb-3 px-1">
+              <span className="text-[10px] truncate" style={{ color: "var(--text-faint)" }}>
                 {activeModel === "auto"
                   ? "Auto automatically selects the best AI agent for your request."
                   : activeModel === "vision"
@@ -1581,7 +1677,7 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
 
             {/* Input container */}
             <div
-              className="flex flex-col rounded-[28px] transition-all duration-200"
+              className="flex flex-col rounded-[22px] sm:rounded-[28px] transition-all duration-200 w-full min-w-0"
               style={{
                 background: "var(--bg-secondary)",
                 border: "1px solid var(--white-overlay-08)",
@@ -1600,7 +1696,7 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
               }}
             >
               {attachedFile && (
-                <div className="px-6 pt-4">
+                <div className="px-4 sm:px-6 pt-3 sm:pt-4">
                   <div
                     className="flex items-center gap-3 rounded-[12px] px-3 py-2"
                     style={{ background: "var(--overlay-light)" }}
@@ -1653,7 +1749,7 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
                 </div>
               )}
               {uploadError && (
-                <div className="px-6 pt-3 text-xs" style={{ color: "#FCA5A5" }}>
+                <div className="px-4 sm:px-6 pt-3 text-xs" style={{ color: "#FCA5A5" }}>
                   {uploadError}
                 </div>
               )}
@@ -1669,10 +1765,10 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
                 }}
                 placeholder="Ask anything... (⌘↵ to send)"
                 rows={1}
-                className="flex-1 bg-transparent px-6 pt-5 pb-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-faint)] outline-none resize-none leading-relaxed"
-                style={{ minHeight: "52px", maxHeight: "200px" }}
+                className="flex-1 bg-transparent px-4 sm:px-6 pt-3 sm:pt-5 pb-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-faint)] outline-none resize-none leading-relaxed min-w-0"
+                style={{ minHeight: "44px", maxHeight: "200px" }}
               />
-              <div className="flex items-center justify-between px-4 pb-4">
+              <div className="flex items-center justify-between px-3 sm:px-4 pb-3 sm:pb-4">
                 <div className="flex items-center gap-1">
                   <input
                     ref={fileInputRef}
@@ -1712,7 +1808,7 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isTyping || account.credits <= 0}
-                  className="flex items-center gap-2 px-4 py-2 rounded-[14px] text-sm font-semibold transition-all duration-200 active:scale-95"
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-[12px] sm:rounded-[14px] text-xs sm:text-sm font-semibold transition-all duration-200 active:scale-95"
                   style={{
                     background: input.trim()
                       ? "linear-gradient(135deg, #6C5CE7 0%, #7C3AED 100%)"
@@ -1737,7 +1833,7 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
             </div>
 
             <p
-              className="text-center text-[10px] mt-3"
+              className="text-center text-[10px] mt-2 sm:mt-3 hidden sm:block"
               style={{ color: "var(--border-strong)" }}
             >
               CotextAI can make mistakes. Verify important information.
@@ -1747,423 +1843,484 @@ export default function WorkspaceScreen({ navigate, account, setAccount }) {
       </main>
       )}
 
-      {/* RIGHT ARTIFACT PANEL */}
-      <div
-        className="workspace-artifact-panel sidebar-transition shrink-0 flex flex-col"
-        style={{
-          width: artifactPanelOpen ? "360px" : "0px",
-          opacity: artifactPanelOpen ? 1 : 0,
-          overflow: "hidden",
-          borderLeft: "1px solid var(--border-faint)",
-          background: "var(--bg-sidebar)",
-        }}
-      >
-        <div className="flex flex-col h-full min-w-[360px]">
-          {/* Panel header */}
-          <div
-            className="flex items-center justify-between px-5 py-4 shrink-0"
-            style={{ borderBottom: "1px solid var(--border-faint)" }}
-          >
-            <h3 className="text-sm font-semibold text-[var(--text-primary)]">Artifacts</h3>
-            <div className="flex items-center gap-2">
-              <div
-                className="flex items-center gap-1 p-1 rounded-[10px]"
-                style={{
-                  background: "var(--border-subtle)",
-                  border: "1px solid var(--border-color)",
-                }}
-              >
-                <button
-                  onClick={() => setArtifactView("code")}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-xs font-medium transition-all ${
-                    artifactView === "code"
-                      ? "bg-[var(--border-medium)] text-[var(--text-primary)]"
-                      : "text-[var(--text-muted)]"
-                  }`}
-                >
-                  <Code2 size={12} />
-                  Code
-                </button>
-                <button
-                  onClick={() => setArtifactView("preview")}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-xs font-medium transition-all ${
-                    artifactView === "preview"
-                      ? "bg-[var(--border-medium)] text-[var(--text-primary)]"
-                      : "text-[var(--text-muted)]"
-                  }`}
-                >
-                  <Eye size={12} />
-                  Preview
-                </button>
+      {/* RIGHT ARTIFACT PANEL (Tablet & Desktop) + Mobile Artifact View */}
+      {(() => {
+        const renderArtifactInner = (isMobileModal = false) => (
+          <div className="flex flex-col h-full w-full min-w-0 max-w-full overflow-hidden">
+            {/* Panel header */}
+            <div
+              className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 shrink-0 min-w-0"
+              style={{ borderBottom: "1px solid var(--border-faint)" }}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                {isMobileModal && (
+                  <button
+                    onClick={() => {
+                      setMobileArtifactOpen(false)
+                      setMobileView("chat")
+                    }}
+                    className="p-1.5 -ml-1.5 rounded-lg hover:bg-[var(--overlay-light)] transition-colors flex items-center gap-1"
+                    title="Back to chat"
+                  >
+                    <ArrowLeft size={16} color="var(--text-muted)" />
+                    <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                      Chat
+                    </span>
+                  </button>
+                )}
+                <h3 className="text-sm font-semibold text-[var(--text-primary)] truncate">Artifacts</h3>
               </div>
-            </div>
-          </div>
-
-          {/* Artifact cards */}
-          <div className="flex flex-col gap-3 px-4 py-4 shrink-0">
-            {isTyping && (
-              <div
-                className="h-24 rounded-[16px] animate-pulse"
-                style={{
-                  background: "var(--overlay-light)",
-                  border: "1px solid var(--border-faint)",
-                }}
-              >
-                <div className="px-4 py-3">
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                    Generating artifact...
-                  </p>
-                </div>
-              </div>
-            )}
-            {artifacts.length ? (
-              artifacts.map((art) => (
-                <button
-                  key={art.id}
-                  onClick={() => setActiveArtifact(art.id)}
-                  className={`w-full text-left px-4 py-3.5 rounded-[16px] transition-all duration-200 ${
-                    activeArtifact === art.id
-                      ? "conv-active"
-                      : "hover:bg-[var(--overlay-light)]"
-                  }`}
+              <div className="flex items-center gap-2 shrink-0">
+                <div
+                  className="flex items-center gap-1 p-1 rounded-[10px]"
                   style={{
-                    background:
-                      activeArtifact === art.id
-                        ? undefined
-                        : "var(--overlay-faint)",
-                    border:
-                      activeArtifact === art.id
-                        ? undefined
-                        : "1px solid var(--border-faint)",
+                    background: "var(--border-subtle)",
+                    border: "1px solid var(--border-color)",
                   }}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <FileText
-                          size={13}
-                          color={
-                            activeArtifact === art.id ? "#6C5CE7" : "var(--text-faint)"
-                          }
-                        />
-                        <span className="text-[13px] font-medium text-[var(--text-primary)] truncate">
-                          {art.title}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-                          style={{
-                            background: "rgba(34,197,94,0.1)",
-                            color: "#22C55E",
-                            border: "1px solid rgba(34,197,94,0.2)",
-                          }}
-                        >
-                          {art.status}
-                        </span>
-                        <span
-                          className="text-[11px]"
-                          style={{ color: "var(--text-faint)" }}
-                        >
-                          {art.type}
-                        </span>
-                        <span
-                          className="text-[10px]"
-                          style={{ color: "var(--text-faint)" }}
-                        >
-                          {new Date(art.createdAt).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      </div>
-                      <p
-                        className="text-[11px] mt-1.5 line-clamp-2 leading-relaxed"
-                        style={{ color: "var(--text-faint)" }}
-                      >
-                        {art.preview}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 mt-2.5">
-                    <button
-                      className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[10px] font-medium transition-all hover:bg-[var(--border-medium)]"
-                      style={{ color: "#6C5CE7" }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setActiveArtifact(art.id)
-                        setArtifactView("preview")
-                      }}
-                    >
-                      <Maximize2 size={10} />
-                      Open
-                    </button>
-                    <button
-                      className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[10px] font-medium transition-all hover:bg-[var(--border-medium)]"
-                      style={{ color: "var(--text-muted)" }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleArtifactDownload(art)
-                      }}
-                    >
-                      <Download size={10} />
-                      Download
-                    </button>
-                    <button
-                      className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[10px] font-medium transition-all hover:bg-[var(--border-medium)]"
-                      style={{ color: "var(--text-muted)" }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleArtifactCopy(art)
-                      }}
-                    >
-                      {copied === `${art.id}-artifact` ? (
-                        <Check size={10} color="#22C55E" />
-                      ) : (
-                        <Copy size={10} />
-                      )}
-                      {copied === `${art.id}-artifact` ? "Copied" : "Copy"}
-                    </button>
-                    <button
-                      className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[10px] font-medium transition-all hover:bg-[var(--border-medium)]"
-                      style={{ color: "var(--text-muted)" }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleArtifactShare(art)
-                      }}
-                    >
-                      <Share2 size={10} />
-                      {copied === `${art.id}-share` ? "Copied" : "Share"}
-                    </button>
-                  </div>
-                </button>
-              ))
-            ) : (
-              <div className="px-2 py-10 text-center">
-                <FileText size={28} color="var(--border-strong)" className="mx-auto mb-3" />
-                <p className="text-sm font-medium" style={{ color: "var(--text-faint)" }}>
-                  No artifacts generated yet.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Code/preview view */}
-          <div
-            className="flex-1 overflow-hidden mx-4 mb-4 rounded-[16px]"
-            style={{
-              background: "var(--surface-tertiary)",
-              border: "1px solid var(--white-overlay-07)",
-            }}
-          >
-            {(() => {
-              const artifact = artifacts.find(
-                (item) => item.id === activeArtifact,
-              )
-              if (!artifact) {
-                return (
-                  <div className="h-full flex items-center justify-center p-6 text-center">
-                    <div>
-                      <Eye size={32} color="var(--border-strong)" className="mx-auto mb-3" />
-                      <p
-                        className="text-sm font-medium"
-                        style={{ color: "var(--text-faint)" }}
-                      >
-                        No artifact selected
-                      </p>
-                    </div>
-                  </div>
-                )
-              }
-              const artifactText = getArtifactText(artifact)
-              
-              const isImage =
-                artifact.type.toLowerCase().includes("image") ||
-                artifact.filename.match(/\.(png|jpe?g|gif|webp)$/i)
-              const isHtml =
-                artifact.type.toLowerCase().includes("html") ||
-                artifact.filename.endsWith(".html")
-              const isMarkdown =
-                artifact.type.toLowerCase().includes("markdown") ||
-                artifact.filename.endsWith(".md")
-              const isDocument = ["pdf", "ppt"].includes(
-                artifact.type.toLowerCase(),
-              )
-              if (artifactView === "preview") {
-                return (
-                  <div className="h-full overflow-y-auto p-4">
-                    {isImage && artifact.url ? (
-                      <img
-                        src={artifact.url}
-                        alt={artifact.title}
-                        className="max-w-full rounded-[12px] mx-auto"
-                      />
-                    ) : isHtml ? (
-                      <iframe
-                        title={artifact.title}
-                        srcDoc={artifactText}
-                        className="w-full h-full rounded-[12px] bg-[var(--text-on-accent)]"
-                      />
-                    ) : isDocument && artifact.url ? (
-                      <iframe
-                        title={artifact.title}
-                        src={artifact.url}
-                        className="w-full h-full rounded-[12px]"
-                      />
-                    ) : isMarkdown ? (
-                      <MarkdownContent content={artifactText} />
-                    )  : (
-  artifact.type.toLowerCase() === "code" ||
-  [
-    "java",
-    "javascript",
-    "js",
-    "ts",
-    "typescript",
-    "cpp",
-    "c",
-    "python",
-    "py",
-    "go",
-    "php",
-    "cs",
-  ].includes((artifact.language || "").toLowerCase())
-) ? (
-  <pre
-    className="text-xs whitespace-pre-wrap overflow-auto"
-    style={{
-      color: "#A8B5C8",
-      fontFamily: "JetBrains Mono, monospace",
-    }}
-  >
-    <code>{artifactText}</code>
-  </pre>
-) : artifact.type.toLowerCase().includes("react") ? (
-  <pre
-    className="text-xs whitespace-pre-wrap"
-    style={{ color: "#A8B5C8" }}
-  >
-    {artifactText}
-  </pre>
-) : (
-                      <div className="h-full flex items-center justify-center text-center">
-                        <div>
-                          <Eye
-                            size={32}
-                            color="var(--border-strong)"
-                            className="mx-auto mb-3"
-                          />
-                          <p
-                            className="text-sm font-medium"
-                            style={{ color: "var(--text-faint)" }}
-                          >
-                            Preview unavailable
-                          </p>
-                          <p
-                            className="text-xs mt-1"
-                            style={{ color: "var(--border-strong)" }}
-                          >
-                            Download this artifact to view it.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )
-              }
-              const codeLines = artifactText.split("\n")
-              return (
-                <div className="h-full overflow-y-auto">
-                  <div
-                    className="flex items-center gap-2 px-4 py-2.5"
-                    style={{ borderBottom: "1px solid var(--border-color)" }}
+                  <button
+                    onClick={() => setArtifactView("code")}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-xs font-medium transition-all ${
+                      artifactView === "code"
+                        ? "bg-[var(--border-medium)] text-[var(--text-primary)]"
+                        : "text-[var(--text-muted)]"
+                    }`}
                   >
-                    <div className="flex gap-1.5">
-                      <div
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ background: "#EF4444" }}
-                      />
-                      <div
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ background: "#F59E0B" }}
-                      />
-                      <div
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ background: "#22C55E" }}
-                      />
-                    </div>
-                    <span
-                      className="text-[11px] font-medium"
-                      style={{
-                        color: "var(--text-faint)",
-                        fontFamily: "JetBrains Mono, monospace",
-                      }}
-                    >
-                      {artifact.filename}
-                    </span>
-                    <span
-                      className="text-[10px] ml-auto"
-                      style={{ color: "var(--text-faint)" }}
-                    >
-                      {artifact.language}
-                    </span>
-                    <button
-                      onClick={() => handleArtifactCopy(artifact)}
-                      className="text-[10px] ml-2"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      {copied === `${artifact.id}-artifact` ? "Copied" : "Copy"}
-                    </button>
-                    <button
-                      onClick={() => handleArtifactDownload(artifact)}
-                      className="text-[10px] ml-2"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      Download
-                    </button>
-                    <button
-                      onClick={() => setArtifactExpanded((current) => !current)}
-                      className="text-[10px] ml-2"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      {artifactExpanded ? "Collapse" : "Expand"}
-                    </button>
+                    <Code2 size={12} />
+                    Code
+                  </button>
+                  <button
+                    onClick={() => setArtifactView("preview")}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-xs font-medium transition-all ${
+                      artifactView === "preview"
+                        ? "bg-[var(--border-medium)] text-[var(--text-primary)]"
+                        : "text-[var(--text-muted)]"
+                    }`}
+                  >
+                    <Eye size={12} />
+                    Preview
+                  </button>
+                </div>
+                {isMobileModal && (
+                  <button
+                    onClick={() => {
+                      setMobileArtifactOpen(false)
+                      setMobileView("chat")
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-[var(--overlay-light)] transition-colors"
+                    title="Close artifacts"
+                  >
+                    <X size={16} color="var(--text-muted)" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Artifact cards */}
+            <div className="flex flex-col gap-3 px-4 py-4 shrink-0 max-h-[40%] overflow-y-auto min-w-0">
+              {isTyping && (
+                <div
+                  className="h-24 rounded-[16px] animate-pulse"
+                  style={{
+                    background: "var(--overlay-light)",
+                    border: "1px solid var(--border-faint)",
+                  }}
+                >
+                  <div className="px-4 py-3">
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                      Generating artifact...
+                    </p>
                   </div>
-                  <pre
-                    className="p-4 text-[11.5px] leading-[1.8] overflow-x-auto"
+                </div>
+              )}
+              {artifacts.length ? (
+                artifacts.map((art) => (
+                  <button
+                    key={art.id}
+                    onClick={() => {
+                      setActiveArtifact(art.id)
+                      setArtifactView("preview")
+                    }}
+                    className={`w-full text-left px-4 py-3.5 rounded-[16px] transition-all duration-200 min-w-0 ${
+                      activeArtifact === art.id
+                        ? "conv-active"
+                        : "hover:bg-[var(--overlay-light)]"
+                    }`}
                     style={{
-                      fontFamily: "JetBrains Mono, monospace",
-                      color: "var(--code-text)",
-                      background: "var(--code-bg)",
-                      margin: 0,
+                      background:
+                        activeArtifact === art.id
+                          ? undefined
+                          : "var(--overlay-faint)",
+                      border:
+                        activeArtifact === art.id
+                          ? undefined
+                          : "1px solid var(--border-faint)",
                     }}
                   >
-                    {(artifactExpanded
-                      ? codeLines
-                      : codeLines.slice(0, 16)
-                    ).map((line, index) => (
-                      <span key={index} className="block">
-                        <span
-                          className="mr-4 inline-block w-5 select-none text-right"
+                    <div className="flex items-start justify-between gap-2 min-w-0">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 min-w-0">
+                          <FileText
+                            size={13}
+                            color={
+                              activeArtifact === art.id ? "#6C5CE7" : "var(--text-faint)"
+                            }
+                            className="shrink-0"
+                          />
+                          <span className="text-[13px] font-medium text-[var(--text-primary)] truncate flex-1 min-w-0">
+                            {art.title}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                            style={{
+                              background: "rgba(34,197,94,0.1)",
+                              color: "#22C55E",
+                              border: "1px solid rgba(34,197,94,0.2)",
+                            }}
+                          >
+                            {art.status}
+                          </span>
+                          <span
+                            className="text-[11px]"
+                            style={{ color: "var(--text-faint)" }}
+                          >
+                            {art.type}
+                          </span>
+                          <span
+                            className="text-[10px]"
+                            style={{ color: "var(--text-faint)" }}
+                          >
+                            {new Date(art.createdAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <p
+                          className="text-[11px] mt-1.5 line-clamp-2 leading-relaxed"
                           style={{ color: "var(--text-faint)" }}
                         >
-                          {index + 1}
-                        </span>
-                        <span
-                          dangerouslySetInnerHTML={highlightCodeLine(
-                            line,
-                            artifact.language,
-                          )}
-                        />
-                      </span>
-                    ))}
-                  </pre>
+                          {art.preview}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 mt-2.5 flex-wrap">
+                      <button
+                        className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[10px] font-medium transition-all hover:bg-[var(--border-medium)]"
+                        style={{ color: "#6C5CE7" }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setActiveArtifact(art.id)
+                          setArtifactView("preview")
+                          if (isMobile) {
+                            setMobileArtifactOpen(true)
+                            setMobileView("artifacts")
+                          }
+                        }}
+                      >
+                        <Maximize2 size={10} />
+                        Open
+                      </button>
+                      <button
+                        className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[10px] font-medium transition-all hover:bg-[var(--border-medium)]"
+                        style={{ color: "var(--text-muted)" }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleArtifactDownload(art)
+                        }}
+                      >
+                        <Download size={10} />
+                        Download
+                      </button>
+                      <button
+                        className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[10px] font-medium transition-all hover:bg-[var(--border-medium)]"
+                        style={{ color: "var(--text-muted)" }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleArtifactCopy(art)
+                        }}
+                      >
+                        {copied === `${art.id}-artifact` ? (
+                          <Check size={10} color="#22C55E" />
+                        ) : (
+                          <Copy size={10} />
+                        )}
+                        {copied === `${art.id}-artifact` ? "Copied" : "Copy"}
+                      </button>
+                      <button
+                        className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[10px] font-medium transition-all hover:bg-[var(--border-medium)]"
+                        style={{ color: "var(--text-muted)" }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleArtifactShare(art)
+                        }}
+                      >
+                        <Share2 size={10} />
+                        {copied === `${art.id}-share` ? "Copied" : "Share"}
+                      </button>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="px-2 py-10 text-center">
+                  <FileText size={28} color="var(--border-strong)" className="mx-auto mb-3" />
+                  <p className="text-sm font-medium" style={{ color: "var(--text-faint)" }}>
+                    No artifacts generated yet.
+                  </p>
                 </div>
-              )
-            })()}
+              )}
+            </div>
+
+            {/* Code/preview view */}
+            <div
+              className="flex-1 overflow-hidden mx-4 mb-4 rounded-[16px] min-w-0"
+              style={{
+                background: "var(--surface-tertiary)",
+                border: "1px solid var(--white-overlay-07)",
+              }}
+            >
+              {(() => {
+                const artifact = artifacts.find(
+                  (item) => item.id === activeArtifact,
+                )
+                if (!artifact) {
+                  return (
+                    <div className="h-full flex items-center justify-center p-6 text-center">
+                      <div>
+                        <Eye size={32} color="var(--border-strong)" className="mx-auto mb-3" />
+                        <p
+                          className="text-sm font-medium"
+                          style={{ color: "var(--text-faint)" }}
+                        >
+                          No artifact selected
+                        </p>
+                      </div>
+                    </div>
+                  )
+                }
+                const artifactText = getArtifactText(artifact)
+                
+                const isImage =
+                  artifact.type.toLowerCase().includes("image") ||
+                  artifact.filename.match(/\.(png|jpe?g|gif|webp)$/i)
+                const isHtml =
+                  artifact.type.toLowerCase().includes("html") ||
+                  artifact.filename.endsWith(".html")
+                const isMarkdown =
+                  artifact.type.toLowerCase().includes("markdown") ||
+                  artifact.filename.endsWith(".md")
+                const isDocument = ["pdf", "ppt"].includes(
+                  artifact.type.toLowerCase(),
+                )
+                if (artifactView === "preview") {
+                  return (
+                    <div className="h-full overflow-y-auto p-4 max-w-full">
+                      {isImage && artifact.url ? (
+                        <img
+                          src={artifact.url}
+                          alt={artifact.title}
+                          className="max-w-full h-auto rounded-[12px] mx-auto object-contain"
+                        />
+                      ) : isHtml ? (
+                        <iframe
+                          title={artifact.title}
+                          srcDoc={artifactText}
+                          className="w-full h-full rounded-[12px] bg-[var(--text-on-accent)] border-0"
+                        />
+                      ) : isDocument && artifact.url ? (
+                        <iframe
+                          title={artifact.title}
+                          src={artifact.url}
+                          className="w-full h-full rounded-[12px] border-0"
+                        />
+                      ) : isMarkdown ? (
+                        <div className="w-full max-w-full overflow-x-auto">
+                          <MarkdownContent content={artifactText} />
+                        </div>
+                      ) : (
+                        artifact.type.toLowerCase() === "code" ||
+                        [
+                          "java",
+                          "javascript",
+                          "js",
+                          "ts",
+                          "typescript",
+                          "cpp",
+                          "c",
+                          "python",
+                          "py",
+                          "go",
+                          "php",
+                          "cs",
+                        ].includes((artifact.language || "").toLowerCase())
+                      ) ? (
+                        <pre
+                          className="text-xs whitespace-pre-wrap overflow-auto max-w-full"
+                          style={{
+                            color: "#A8B5C8",
+                            fontFamily: "JetBrains Mono, monospace",
+                          }}
+                        >
+                          <code>{artifactText}</code>
+                        </pre>
+                      ) : artifact.type.toLowerCase().includes("react") ? (
+                        <pre
+                          className="text-xs whitespace-pre-wrap overflow-auto max-w-full"
+                          style={{ color: "#A8B5C8" }}
+                        >
+                          {artifactText}
+                        </pre>
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-center">
+                          <div>
+                            <Eye
+                              size={32}
+                              color="var(--border-strong)"
+                              className="mx-auto mb-3"
+                            />
+                            <p
+                              className="text-sm font-medium"
+                              style={{ color: "var(--text-faint)" }}
+                            >
+                              Preview unavailable
+                            </p>
+                            <p
+                              className="text-xs mt-1"
+                              style={{ color: "var(--border-strong)" }}
+                            >
+                              Download this artifact to view it.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+                const codeLines = artifactText.split("\n")
+                return (
+                  <div className="h-full overflow-y-auto max-w-full">
+                    <div
+                      className="flex items-center gap-2 px-4 py-2.5 min-w-0"
+                      style={{ borderBottom: "1px solid var(--border-color)" }}
+                    >
+                      <div className="flex gap-1.5 shrink-0">
+                        <div
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ background: "#EF4444" }}
+                        />
+                        <div
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ background: "#F59E0B" }}
+                        />
+                        <div
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ background: "#22C55E" }}
+                        />
+                      </div>
+                      <span
+                        className="text-[11px] font-medium truncate"
+                        style={{
+                          color: "var(--text-faint)",
+                          fontFamily: "JetBrains Mono, monospace",
+                        }}
+                      >
+                        {artifact.filename}
+                      </span>
+                      <span
+                        className="text-[10px] ml-auto shrink-0"
+                        style={{ color: "var(--text-faint)" }}
+                      >
+                        {artifact.language}
+                      </span>
+                      <button
+                        onClick={() => handleArtifactCopy(artifact)}
+                        className="text-[10px] ml-2 shrink-0"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        {copied === `${artifact.id}-artifact` ? "Copied" : "Copy"}
+                      </button>
+                      <button
+                        onClick={() => handleArtifactDownload(artifact)}
+                        className="text-[10px] ml-2 shrink-0"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Download
+                      </button>
+                      <button
+                        onClick={() => setArtifactExpanded((current) => !current)}
+                        className="text-[10px] ml-2 shrink-0"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        {artifactExpanded ? "Collapse" : "Expand"}
+                      </button>
+                    </div>
+                    <pre
+                      className="p-4 text-[11.5px] leading-[1.8] overflow-x-auto max-w-full"
+                      style={{
+                        fontFamily: "JetBrains Mono, monospace",
+                        color: "var(--code-text)",
+                        background: "var(--code-bg)",
+                        margin: 0,
+                      }}
+                    >
+                      {(artifactExpanded
+                        ? codeLines
+                        : codeLines.slice(0, 16)
+                      ).map((line, index) => (
+                        <span key={index} className="block">
+                          <span
+                            className="mr-4 inline-block w-5 select-none text-right shrink-0"
+                            style={{ color: "var(--text-faint)" }}
+                          >
+                            {index + 1}
+                          </span>
+                          <span
+                            dangerouslySetInnerHTML={highlightCodeLine(
+                              line,
+                              artifact.language,
+                            )}
+                          />
+                        </span>
+                      ))}
+                    </pre>
+                  </div>
+                )
+              })()}
+            </div>
           </div>
-        </div>
-      </div>
+        )
+
+        return (
+          <>
+            {/* RIGHT ARTIFACT PANEL (Tablet & Desktop) */}
+            <div
+              className={`workspace-artifact-panel sidebar-transition hidden md:flex flex-col shrink-0 ${
+                artifactPanelOpen ? "w-[320px] lg:w-[360px] opacity-100" : "w-0 opacity-0"
+              }`}
+              style={{
+                overflow: "hidden",
+                borderLeft: "1px solid var(--border-faint)",
+                background: "var(--bg-sidebar)",
+              }}
+            >
+              <div className="flex flex-col h-full w-[320px] lg:w-[360px] min-w-0 max-w-full overflow-hidden">
+                {renderArtifactInner(false)}
+              </div>
+            </div>
+
+            {/* Mobile Artifact Panel (Full-screen slide-over / page) */}
+            {mobileArtifactOpen && (
+              <div className="fixed inset-0 z-50 flex flex-col bg-[var(--bg-sidebar)] md:hidden">
+                <div className="flex flex-col h-full w-full min-w-0 max-w-full overflow-hidden">
+                  {renderArtifactInner(true)}
+                </div>
+              </div>
+            )}
+          </>
+        )
+      })()}
       {rateLimit && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-6"

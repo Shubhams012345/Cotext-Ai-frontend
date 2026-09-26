@@ -222,7 +222,7 @@ export default function BillingScreen({ navigate, account, setAccount }) {
       style={{ background: "var(--bg-primary)", fontFamily: "Inter, sans-serif" }}
     >
       <nav
-        className="flex items-center gap-4 px-8 py-4 sticky top-0 z-10"
+        className="flex items-center gap-4 px-4 sm:px-8 py-4 sticky top-0 z-10"
         style={{
           background: "var(--nav-bg)",
 
@@ -258,7 +258,7 @@ export default function BillingScreen({ navigate, account, setAccount }) {
         </button>
       </nav>
 
-      <main className="max-w-[1100px] mx-auto px-8 py-10">
+      <main className="max-w-[1100px] mx-auto px-4 sm:px-8 py-6 sm:py-10">
         <div className="mb-8">
           <p className="text-sm font-medium mb-1" style={{ color: "#6C5CE7" }}>
             Workspace billing
@@ -311,9 +311,9 @@ export default function BillingScreen({ navigate, account, setAccount }) {
           </div>
         )}
 
-        <section className="grid grid-cols-3 gap-4 mb-8">
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
           <div
-            className="col-span-2 p-6 rounded-[20px]"
+            className="lg:col-span-2 p-5 sm:p-6 rounded-[20px]"
             style={{
               background: "var(--bg-secondary)",
 
@@ -347,7 +347,7 @@ export default function BillingScreen({ navigate, account, setAccount }) {
               </div>
               <CreditCard size={20} color="#6C5CE7" />
             </div>
-            <div className="grid grid-cols-4 gap-4 mt-8">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 sm:mt-8">
               {[
                 ["Remaining Credits", remainingCredits],
 
@@ -378,7 +378,7 @@ export default function BillingScreen({ navigate, account, setAccount }) {
             </div>
           </div>
           <div
-            className="p-6 rounded-[20px]"
+            className="p-5 sm:p-6 rounded-[20px]"
             style={{
               background: "var(--bg-secondary)",
 
@@ -408,7 +408,7 @@ export default function BillingScreen({ navigate, account, setAccount }) {
           </div>
         </section>
 
-        <section className="grid grid-cols-4 gap-4 mb-10">
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-10">
           {usage.map(([label, value, change, Icon, color]) => {
             const values = {
               "Today's Credits Used": Math.max(
@@ -459,7 +459,7 @@ export default function BillingScreen({ navigate, account, setAccount }) {
               Choose the plan that fits your workflow.
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {plans.map((plan) => {
               const active = currentPlan?.id === plan.id
 
@@ -539,7 +539,7 @@ export default function BillingScreen({ navigate, account, setAccount }) {
           </div>
         </section>
 
-        <section className="grid grid-cols-2 gap-6">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div
             className="rounded-[20px] overflow-hidden"
             style={{

@@ -135,7 +135,7 @@ export default function DashboardScreen({ navigate ,account}) {
     >
       {/* Top nav */}
       <nav
-        className="flex items-center justify-between px-8 py-4 sticky top-0 z-10"
+        className="flex items-center justify-between px-4 sm:px-8 py-4 sticky top-0 z-10"
         style={{
           background: "var(--nav-bg)",
           backdropFilter: "blur(20px)",
@@ -177,30 +177,30 @@ export default function DashboardScreen({ navigate ,account}) {
         </div>
       </nav>
 
-      <div className="max-w-[1100px] mx-auto px-8 py-10">
+      <div className="max-w-[1100px] mx-auto px-4 sm:px-8 py-6 sm:py-10">
         {/* Welcome */}
-        <div className="mb-10 animate-fade-in-up">
+        <div className="mb-6 sm:mb-10 animate-fade-in-up">
           <p className="text-sm font-medium mb-1" style={{ color: "#6C5CE7" }}>
             Good morning
           </p>
           <h1
-            className="text-4xl font-bold text-[var(--text-primary)] mb-3"
+            className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--text-primary)] mb-2 sm:mb-3"
             style={{ letterSpacing: "-0.03em" }}
           >
             Welcome back, {account?.name?.split(" ")[0] || "User"}
           </h1>
-          <p style={{ color: "var(--text-muted)" }}>
+          <p className="text-sm sm:text-base" style={{ color: "var(--text-muted)" }}>
             What would you like to build today?
           </p>
         </div>
 
         {/* Quick actions */}
-        <div className="grid grid-cols-4 gap-4 mb-10 animate-fade-in-up delay-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-10 animate-fade-in-up delay-100">
           {quickActions.map((action) => (
             <button
               key={action.label}
               onClick={() => navigate("workspace")}
-              className="flex flex-col gap-3 p-5 rounded-[20px] text-left transition-all duration-200 hover-lift group"
+              className="flex flex-col gap-3 p-4 sm:p-5 rounded-[20px] text-left transition-all duration-200 hover-lift group"
               style={{
                 background: "var(--bg-secondary)",
                 border: "1px solid var(--border-color)",
@@ -225,11 +225,11 @@ export default function DashboardScreen({ navigate ,account}) {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-10 animate-fade-in-up delay-200">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-10 animate-fade-in-up delay-200">
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="p-5 rounded-[20px]"
+              className="p-4 sm:p-5 rounded-[20px]"
               style={{
                 background: "var(--bg-secondary)",
                 border: "1px solid var(--border-color)",
@@ -248,7 +248,7 @@ export default function DashboardScreen({ navigate ,account}) {
                 </span>
               </div>
               <p
-                className="text-2xl font-bold text-[var(--text-primary)] mb-1"
+                className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mb-1"
                 style={{ letterSpacing: "-0.02em" }}
               >
                 {stat.value}
@@ -269,7 +269,7 @@ export default function DashboardScreen({ navigate ,account}) {
           }}
         >
           <div
-            className="flex items-center justify-between px-6 py-4"
+            className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4"
             style={{ borderBottom: "1px solid var(--border-faint)" }}
           >
             <h2 className="text-sm font-semibold text-[var(--text-primary)]">
@@ -288,7 +288,7 @@ export default function DashboardScreen({ navigate ,account}) {
               <button
                 key={chat._id}
                 onClick={() => navigate("workspace")}
-                className="w-full flex items-center gap-4 px-6 py-4 text-left transition-all hover:bg-[var(--overlay-faint)] group"
+                className="w-full flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3.5 sm:py-4 text-left transition-all hover:bg-[var(--overlay-faint)] group"
                 style={{
                   borderBottom:
                     i < conversations.length - 1
@@ -306,18 +306,16 @@ export default function DashboardScreen({ navigate ,account}) {
                   <p className="text-sm font-medium text-[var(--text-primary)] truncate">
                     {chat.title}
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: "var(--text-faint)" }}>
-                   <p
-  className="text-xs mt-0.5"
-  style={{ color: "var(--text-faint)" }}
->
-  Conversation
-</p>
+                  <p
+                    className="text-xs mt-0.5"
+                    style={{ color: "var(--text-faint)" }}
+                  >
+                    Conversation
                   </p>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-xs" style={{ color: "var(--text-faint)" }}>
-                    {new Date(chat.updatedAt).toLocaleString()}
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                  <span className="text-xs hidden sm:inline" style={{ color: "var(--text-faint)" }}>
+                    {new Date(chat.updatedAt).toLocaleDateString()}
                   </span>
                   <ChevronRight
                     size={14}
